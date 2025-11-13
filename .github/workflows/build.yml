@@ -10,38 +10,42 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Install Git
-        run: |
-          git --version
+      # 1) 먼저 하율님 저장소 체크아웃(여기에 patch_rustdesk.ps1 있음)
+      - name: Checkout your repo (patch files)
+        uses: actions/checkout@v4
 
+      # 2) RustDesk 원본 다운로드
       - name: Download RustDesk source
         run: |
           git clone https://github.com/rustdesk/rustdesk.git
 
-      - name: Checkout your repo (patch files)
-        uses: actions/checkout@v4
-
+      # 3) 패치 파일을 RustDesk 폴더 안으로 복사
       - name: Copy patch files into RustDesk source
         run: |
-          Copy-Item -Path ".\patch_rustdesk.ps1" -Destination ".\rustdesk\patch_rustdesk.ps1" -Force
+          Copy-Item -Path "patch_rustdesk.ps1" -Destination "rustdesk\patch_rustdesk.ps1" -Force
 
-      - name: Apply patch (server address + key)
+      # 4) 패치 적용 (서버주소/키 적용)
+      - name: Apply patch
         run: |
           cd rustdesk
           powershell.exe -ExecutionPolicy Bypass -File patch_rustdesk.ps1
 
+      # 5) Rust toolchain 설치
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
+      # 6) 빌드
       - name: Build RustDesk
         run: |
           cd rustdesk
           cargo build --release
 
+      # 7) 이름 변경
       - name: Rename output
         run: |
           Rename-Item "rustdesk\target\release\rustdesk.exe" "고객지원도우미.exe"
 
+      # 8) 빌드 결과 업로드
       - name: Upload Result
         uses: actions/upload-artifact@v4
         with:
