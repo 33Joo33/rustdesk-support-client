@@ -2,36 +2,33 @@ name: Build RustDesk Support Client
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build-windows:
+    runs-on: windows-latest
 
     steps:
-    - name: Checkout Repo
-      uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v3
 
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
 
-    - name: Install build tools
-      run: sudo apt-get update && sudo apt-get install -y clang cmake pkg-config libssl-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
+      - name: Install Cargo Dependencies
+        run: cargo fetch
 
-    - name: Clone RustDesk
-      run: |
-        git clone https://github.com/rustdesk/rustdesk.git
-        cp patch_rustdesk.ps1 rustdesk/
+      - name: Build RustDesk (Windows)
+        run: cargo build --release
 
-    - name: Apply Patch
-      run: pwsh patch_rustdesk.ps1
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: rustdesk-support-client-windows
+          path: target/release/rustdesk.exe
 
-    - name: Build
-      run: |
-        cd rustdesk
-        cargo build --release
-
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: 고객지원도우미
-        path: rustdesk/target/release/rustdesk
