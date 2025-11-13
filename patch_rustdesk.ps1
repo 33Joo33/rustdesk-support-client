@@ -24,3 +24,4 @@ ForEach-Object {
 } | Set-Content $configFile
 
 Write-Output "PATCH_OK"
+
