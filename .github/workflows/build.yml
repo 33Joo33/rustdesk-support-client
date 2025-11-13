@@ -1,30 +1,49 @@
-name: Build RustDesk Support Client
+name: Build Custom RustDesk Portable
 
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
 
 jobs:
   build-windows:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout repository
+      - name: Install Git
+        run: |
+          git --version
+
+      - name: Download RustDesk source
+        run: |
+          git clone https://github.com/rustdesk/rustdesk.git
+
+      - name: Checkout your repo (patch files)
         uses: actions/checkout@v4
 
-      - name: Install Rust stable
+      - name: Copy patch files into RustDesk source
+        run: |
+          Copy-Item -Path ".\patch_rustdesk.ps1" -Destination ".\rustdesk\patch_rustdesk.ps1" -Force
+
+      - name: Apply patch (server address + key)
+        run: |
+          cd rustdesk
+          powershell.exe -ExecutionPolicy Bypass -File patch_rustdesk.ps1
+
+      - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install Dependencies
-        run: cargo fetch
+      - name: Build RustDesk
+        run: |
+          cd rustdesk
+          cargo build --release
 
-      - name: Build RustDesk (Windows)
-        run: cargo build --release
+      - name: Rename output
+        run: |
+          Rename-Item "rustdesk\target\release\rustdesk.exe" "고객지원도우미.exe"
 
-      - name: Upload Artifact
+      - name: Upload Result
         uses: actions/upload-artifact@v4
         with:
-          name: rustdesk-support-client-windows
-          path: target/release/*.exe
+          name: 고객지원도우미
+          path: 고객지원도우미.exe
